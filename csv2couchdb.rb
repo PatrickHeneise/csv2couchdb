@@ -3,6 +3,7 @@
 require 'rubygems'
 require 'json' # http://flori.github.com/json/doc/index.html
 require 'net/http'
+require 'csv'
 
 # --- !!! Change this to your database !!! ---
 database = "testdb"
@@ -42,60 +43,19 @@ module Couch # Full example class available here: http://wiki.apache.org/couchdb
     end
 end
 
-# From specious @ http://railsforum.com/viewtopic.php?pid=64564#p64564
-def is_a_number?(s)
-    s.to_s.match(/\A[+-]?\d+?(\.\d+)?\Z/) == nil ? false : true 
-end
-
 server = Couch::Server.new("127.0.0.1", "5984", "admin", "admin")
 
-counter = 1
-
 begin
-    # Read file example used by Michael Williams, http://www.abbeyworkshop.com/howto/ruby/rb-readfile/index.html
-    file = File.new("data.csv", "r")
     
-    while (line = file.gets)
-        if (counter == 1)
-            line = line.chomp
-            headers = line.split(",")
-            counter = counter + 1
-        else
-            line = line.chomp
-            line = line.delete "\""
-            values = line.split(",")
-            num = 0
-            data = ""
-            
-            headers.each do |value|
-                if(is_a_number?(values[num]))
-                   data << "\"#{headers[num]}\": #{values[num]},"
-                else
-                   data << "\"#{headers[num]}\": \"#{values[num]}\","
-                end
-                num = num + 1
-            end
-            
-            # Remove linebreak and last comma
-            data = data[0..-2]
-            
-            # Add JSON object brackets
-            data = data.insert(0, '{')
-            data = data.insert(-1, '}')
-
-            obj = JSON data
-            counter = counter + 1
-        end
-        if(obj)
-            send = JSON.generate(obj)
-            server.post("/#{database}/", send) 
-            puts "Importing: #{send}"
-        end
+    csv_data = CSV.read 'data.csv', :encoding => "UTF-8"
+    headers = csv_data.shift.map {|i| i.to_s }
+    string_data = csv_data.map {|row| row.map {|cell| cell.to_s } }
+    array_of_hashes = string_data.map {|row| Hash[*headers.zip(row).flatten] }
+    
+    array_of_hashes.each do |row|
+      row.delete_if{ |key,value| value.empty?}
+      server.post("/#{database}/", row.to_json) 
     end
-    
-    puts "#{counter-2} rows successfully imported."
-    
-    file.close
     
 rescue => err
     puts "Exception: #{err}"
