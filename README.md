@@ -8,4 +8,5 @@ csv2couchdb by Patrick Heneise is licensed under a Creative Commons Attribution-
 
 ## Contributors:
 Patrick Heneise (@PatrickHeneise)
+
 Johannes M. Schleicher (https://github.com/jomis)
