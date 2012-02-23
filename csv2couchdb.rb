@@ -53,7 +53,7 @@ begin
     array_of_hashes = string_data.map {|row| Hash[*headers.zip(row).flatten] }
     
     array_of_hashes.each do |row|
-      row.delete_if{ |key,value| value.empty?}
+      row.delete_if{ |key,value| value.empty?} # Removes Empty Values to be closer to the idea of a document in Couch
       server.post("/#{database}/", row.to_json) 
     end
     
